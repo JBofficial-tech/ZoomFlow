@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -24,14 +24,13 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK
+      - name: Install Android SDK packages
         run: |
+          sdkmanager --update
           yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools"
-          sdkmanager "platforms;android-35"
-          sdkmanager "build-tools;35.0.0"
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Create project
+      - name: Create Android project
         run: |
           mkdir -p app/src/main/java/com/jbofficial/zoomflow
           mkdir -p app/src/main/res/values
@@ -157,7 +156,7 @@ jobs:
                   }
 
                   val info = TextView(this).apply {
-                      text = "\nRecord your Android screen and automatically create smooth zoom effects.\n\nV1 build test successful."
+                      text = "\\nRecord your Android screen and automatically create smooth zoom effects."
                       textSize = 18f
                   }
 
@@ -165,7 +164,7 @@ jobs:
                       text = "START RECORDING"
                       setOnClickListener {
                           info.text =
-                              "\nScreen recording engine coming next.\n\nThe APK build is working!"
+                              "\\nScreen recording engine coming next.\\n\\nAPK build is working!"
                       }
                   }
 
@@ -178,7 +177,7 @@ jobs:
           }
           EOF
 
-      - name: Install Gradle
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
