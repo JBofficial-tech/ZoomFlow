@@ -20,12 +20,14 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-- name: Set up Android SDK
-  uses: android-actions/setup-android@v3
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
 
       - name: Install Android SDK packages
         run: |
-          sdkmanager --update
           yes | sdkmanager --licenses || true
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
@@ -81,111 +83,4 @@ jobs:
               defaultConfig {
                   applicationId 'com.jbofficial.zoomflow'
                   minSdk 29
-                  targetSdk 35
-                  versionCode 1
-                  versionName '0.1'
-              }
-          }
-
-          dependencies {
-              implementation 'androidx.core:core-ktx:1.15.0'
-              implementation 'androidx.appcompat:appcompat:1.7.0'
-          }
-          EOF
-
-          cat > app/src/main/AndroidManifest.xml <<'EOF'
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-              <application
-                  android:theme="@style/AppTheme"
-                  android:label="ZoomFlow"
-                  android:allowBackup="false"
-                  android:supportsRtl="true">
-
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true">
-
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-
-                  </activity>
-
-              </application>
-
-          </manifest>
-          EOF
-
-          cat > app/src/main/res/values/styles.xml <<'EOF'
-          <resources>
-              <style name="AppTheme"
-                  parent="Theme.AppCompat.DayNight.NoActionBar">
-                  <item name="android:fontFamily">sans</item>
-                  <item name="android:windowLightStatusBar">false</item>
-                  <item name="android:statusBarColor">#000000</item>
-                  <item name="android:navigationBarColor">#000000</item>
-              </style>
-          </resources>
-          EOF
-
-          cat > app/src/main/java/com/jbofficial/zoomflow/MainActivity.kt <<'EOF'
-          package com.jbofficial.zoomflow
-
-          import android.os.Bundle
-          import android.widget.Button
-          import android.widget.LinearLayout
-          import android.widget.TextView
-          import androidx.appcompat.app.AppCompatActivity
-
-          class MainActivity : AppCompatActivity() {
-
-              override fun onCreate(savedInstanceState: Bundle?) {
-                  super.onCreate(savedInstanceState)
-
-                  val layout = LinearLayout(this).apply {
-                      orientation = LinearLayout.VERTICAL
-                      setPadding(48, 80, 48, 48)
-                  }
-
-                  val title = TextView(this).apply {
-                      text = "ZoomFlow"
-                      textSize = 32f
-                  }
-
-                  val info = TextView(this).apply {
-                      text = "\\nRecord your Android screen and automatically create smooth zoom effects."
-                      textSize = 18f
-                  }
-
-                  val button = Button(this).apply {
-                      text = "START RECORDING"
-                      setOnClickListener {
-                          info.text =
-                              "\\nScreen recording engine coming next.\\n\\nAPK build is working!"
-                      }
-                  }
-
-                  layout.addView(title)
-                  layout.addView(info)
-                  layout.addView(button)
-
-                  setContentView(layout)
-              }
-          }
-          EOF
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.11.1'
-
-      - name: Build APK
-        run: gradle assembleDebug --no-daemon
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: ZoomFlow-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+                  targetSdk 
