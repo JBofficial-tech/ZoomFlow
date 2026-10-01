@@ -1,145 +1,54 @@
-package com.jbofficial.zoomflow
+name: Build ZoomFlow APK
 
-import android.app.Activity
-import android.content.Intent
-import android.media.projection.MediaProjectionManager
-import android.os.Bundle
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
-class MainActivity : AppCompatActivity() {
+permissions:
+  contents: read
 
-    companion object {
-        private const val REQUEST_SCREEN_CAPTURE = 100
-    }
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-    private lateinit var status: TextView
-    private lateinit var button: Button
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    private var recording = false
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(48, 80, 48, 48)
-        }
+      - name: Install Android SDK
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-        val title = TextView(this).apply {
-            text = "ZoomFlow"
-            textSize = 32f
-        }
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
 
-        status = TextView(this).apply {
-            text = "\nReady to record your screen."
-            textSize = 18f
-        }
+      - name: Build Debug APK
+        run: |
+          gradle assembleDebug --no-daemon
 
-        button = Button(this).apply {
-            text = "START RECORDING"
+      - name: Verify APK
+        run: |
+          ls -lh app/build/outputs/apk/debug/
+          test -f app/build/outputs/apk/debug/app-debug.apk
 
-            setOnClickListener {
-
-                if (!recording) {
-                    requestScreenCapture()
-                } else {
-                    stopRecording()
-                }
-            }
-        }
-
-        layout.addView(title)
-        layout.addView(status)
-        layout.addView(button)
-
-        setContentView(layout)
-    }
-
-    private fun requestScreenCapture() {
-
-        val manager =
-            getSystemService(
-                MEDIA_PROJECTION_SERVICE
-            ) as MediaProjectionManager
-
-        startActivityForResult(
-            manager.createScreenCaptureIntent(),
-            REQUEST_SCREEN_CAPTURE
-        )
-    }
-
-    @Deprecated("Use Activity Result API in future versions")
-    override fun onActivityResult(
-        requestCode: Int,
-        resultCode: Int,
-        data: Intent?
-    ) {
-        super.onActivityResult(
-            requestCode,
-            resultCode,
-            data
-        )
-
-        if (
-            requestCode == REQUEST_SCREEN_CAPTURE &&
-            resultCode == Activity.RESULT_OK &&
-            data != null
-        ) {
-
-            val serviceIntent =
-                Intent(
-                    this,
-                    RecordingService::class.java
-                ).apply {
-
-                    action =
-                        RecordingService.ACTION_START
-
-                    putExtra(
-                        RecordingService.EXTRA_RESULT_CODE,
-                        resultCode
-                    )
-
-                    putExtra(
-                        RecordingService.EXTRA_RESULT_DATA,
-                        data
-                    )
-                }
-
-            startForegroundService(serviceIntent)
-
-            recording = true
-
-            button.text = "STOP RECORDING"
-
-            status.text =
-                "\n🔴 Recording...\n\n" +
-                "Your screen is being recorded."
-        }
-    }
-
-    private fun stopRecording() {
-
-        val intent =
-            Intent(
-                this,
-                RecordingService::class.java
-            ).apply {
-                action =
-                    RecordingService.ACTION_STOP
-            }
-
-        startService(intent)
-
-        recording = false
-
-        button.text = "START RECORDING"
-
-        status.text =
-            "\n✅ Recording saved.\n\n" +
-            "Check Movies/ZoomFlow."
-    }
-}
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZoomFlow-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
