@@ -100,31 +100,65 @@ class MainActivity : AppCompatActivity() {
                 Starting recorder...
             """.trimIndent()
 
-            val serviceIntent = Intent(
-                this,
-                RecordingService::class.java
-            ).apply {
+            val serviceIntent =
+                Intent(
+                    this,
+                    RecordingService::class.java
+                ).apply {
 
-                // IMPORTANT: tell the service to START
-                action = RecordingService.ACTION_START
+                    // IMPORTANT:
+                    // RecordingService checks this action.
+                    action =
+                        RecordingService.ACTION_START
 
-                // IMPORTANT: use the exact keys
-                // expected by RecordingService
-                putExtra(
-                    RecordingService.EXTRA_RESULT_CODE,
-                    resultCode
+                    // IMPORTANT:
+                    // These names MUST match
+                    // RecordingService constants.
+                    putExtra(
+                        RecordingService.EXTRA_RESULT_CODE,
+                        resultCode
+                    )
+
+                    putExtra(
+                        RecordingService.EXTRA_RESULT_DATA,
+                        data
+                    )
+                }
+
+            try {
+
+                startForegroundService(
+                    serviceIntent
                 )
 
-                putExtra(
-                    RecordingService.EXTRA_RESULT_DATA,
-                    data
-                )
+                recordButton.text =
+                    "RECORDING..."
+
+                recordButton.isEnabled =
+                    false
+
+                statusText.text = """
+                    Recording started.
+
+                    Check the notification bar.
+                    ZoomFlow should show
+                    "Screen recording is active".
+                """.trimIndent()
+
+            } catch (e: Exception) {
+
+                statusText.text = """
+                    Failed to start recorder.
+
+                    ${e.message}
+                """.trimIndent()
+
+                recordButton.text =
+                    "START RECORDING"
+
+                recordButton.isEnabled =
+                    true
             }
-
-            startForegroundService(serviceIntent)
-
-            recordButton.text = "RECORDING..."
-            recordButton.isEnabled = false
 
         } else {
 
@@ -134,6 +168,12 @@ class MainActivity : AppCompatActivity() {
                 Tap START RECORDING
                 to try again.
             """.trimIndent()
+
+            recordButton.text =
+                "START RECORDING"
+
+            recordButton.isEnabled =
+                true
         }
     }
 }
