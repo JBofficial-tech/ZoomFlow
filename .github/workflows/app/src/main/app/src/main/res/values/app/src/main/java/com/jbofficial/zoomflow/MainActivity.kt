@@ -12,13 +12,11 @@ import androidx.appcompat.app.AppCompatActivity
 class MainActivity : AppCompatActivity() {
 
     companion object {
-        private const val REQUEST_SCREEN_CAPTURE = 100
+        private const val SCREEN_CAPTURE_REQUEST = 1001
     }
 
-    private lateinit var status: TextView
-    private lateinit var button: Button
-
-    private var recording = false
+    private lateinit var statusText: TextView
+    private lateinit var recordButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,45 +31,49 @@ class MainActivity : AppCompatActivity() {
             textSize = 32f
         }
 
-        status = TextView(this).apply {
-            text = "\nReady to record your screen."
+        statusText = TextView(this).apply {
+            text = """
+                Screen recorder with automatic
+                zoom and motion effects.
+
+                Ready to record.
+            """.trimIndent()
+
             textSize = 18f
+            setPadding(0, 40, 0, 40)
         }
 
-        button = Button(this).apply {
+        recordButton = Button(this).apply {
             text = "START RECORDING"
 
             setOnClickListener {
-
-                if (!recording) {
-                    requestScreenCapture()
-                } else {
-                    stopRecording()
-                }
+                requestScreenCapture()
             }
         }
 
         layout.addView(title)
-        layout.addView(status)
-        layout.addView(button)
+        layout.addView(statusText)
+        layout.addView(recordButton)
 
         setContentView(layout)
     }
 
     private fun requestScreenCapture() {
 
-        val manager =
-            getSystemService(
-                MEDIA_PROJECTION_SERVICE
-            ) as MediaProjectionManager
+        val projectionManager =
+            getSystemService(MEDIA_PROJECTION_SERVICE)
+                    as MediaProjectionManager
+
+        val captureIntent =
+            projectionManager.createScreenCaptureIntent()
 
         startActivityForResult(
-            manager.createScreenCaptureIntent(),
-            REQUEST_SCREEN_CAPTURE
+            captureIntent,
+            SCREEN_CAPTURE_REQUEST
         )
     }
 
-    @Deprecated("Use Activity Result API in future versions")
+    @Deprecated("Use Activity Result API in a future update")
     override fun onActivityResult(
         requestCode: Int,
         resultCode: Int,
@@ -83,63 +85,55 @@ class MainActivity : AppCompatActivity() {
             data
         )
 
+        if (requestCode != SCREEN_CAPTURE_REQUEST) {
+            return
+        }
+
         if (
-            requestCode == REQUEST_SCREEN_CAPTURE &&
             resultCode == Activity.RESULT_OK &&
             data != null
         ) {
 
-            val serviceIntent =
-                Intent(
-                    this,
-                    RecordingService::class.java
-                ).apply {
+            statusText.text = """
+                Screen capture permission granted.
 
-                    action =
-                        RecordingService.ACTION_START
+                Starting recorder...
+            """.trimIndent()
 
-                    putExtra(
-                        RecordingService.EXTRA_RESULT_CODE,
-                        resultCode
-                    )
-
-                    putExtra(
-                        RecordingService.EXTRA_RESULT_DATA,
-                        data
-                    )
-                }
-
-            startForegroundService(serviceIntent)
-
-            recording = true
-
-            button.text = "STOP RECORDING"
-
-            status.text =
-                "\n🔴 Recording...\n\n" +
-                "Your screen is being recorded."
-        }
-    }
-
-    private fun stopRecording() {
-
-        val intent =
-            Intent(
+            val serviceIntent = Intent(
                 this,
                 RecordingService::class.java
             ).apply {
-                action =
-                    RecordingService.ACTION_STOP
+
+                // IMPORTANT: tell the service to START
+                action = RecordingService.ACTION_START
+
+                // IMPORTANT: use the exact keys
+                // expected by RecordingService
+                putExtra(
+                    RecordingService.EXTRA_RESULT_CODE,
+                    resultCode
+                )
+
+                putExtra(
+                    RecordingService.EXTRA_RESULT_DATA,
+                    data
+                )
             }
 
-        startService(intent)
+            startForegroundService(serviceIntent)
 
-        recording = false
+            recordButton.text = "RECORDING..."
+            recordButton.isEnabled = false
 
-        button.text = "START RECORDING"
+        } else {
 
-        status.text =
-            "\n✅ Recording saved.\n\n" +
-            "Check Movies/ZoomFlow."
+            statusText.text = """
+                Screen capture permission denied.
+
+                Tap START RECORDING
+                to try again.
+            """.trimIndent()
+        }
     }
 }
