@@ -89,78 +89,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        if (
-            resultCode == Activity.RESULT_OK &&
-            data != null
-        ) {
-
-            statusText.text = """
-                Screen capture permission granted.
-
-                Starting recorder...
-            """.trimIndent()
-
-            val serviceIntent =
-                Intent(
-                    this,
-                    RecordingService::class.java
-                ).apply {
-
-                    // IMPORTANT:
-                    // RecordingService checks this action.
-                    action =
-                        RecordingService.ACTION_START
-
-                    // IMPORTANT:
-                    // These names MUST match
-                    // RecordingService constants.
-                    putExtra(
-                        RecordingService.EXTRA_RESULT_CODE,
-                        resultCode
-                    )
-
-                    putExtra(
-                        RecordingService.EXTRA_RESULT_DATA,
-                        data
-                    )
-                }
-
-            try {
-
-                startForegroundService(
-                    serviceIntent
-                )
-
-                recordButton.text =
-                    "RECORDING..."
-
-                recordButton.isEnabled =
-                    false
-
-                statusText.text = """
-                    Recording started.
-
-                    Check the notification bar.
-                    ZoomFlow should show
-                    "Screen recording is active".
-                """.trimIndent()
-
-            } catch (e: Exception) {
-
-                statusText.text = """
-                    Failed to start recorder.
-
-                    ${e.message}
-                """.trimIndent()
-
-                recordButton.text =
-                    "START RECORDING"
-
-                recordButton.isEnabled =
-                    true
-            }
-
-        } else {
+        if (resultCode != Activity.RESULT_OK || data == null) {
 
             statusText.text = """
                 Screen capture permission denied.
@@ -169,11 +98,74 @@ class MainActivity : AppCompatActivity() {
                 to try again.
             """.trimIndent()
 
-            recordButton.text =
-                "START RECORDING"
+            recordButton.text = "START RECORDING"
+            recordButton.isEnabled = true
 
-            recordButton.isEnabled =
-                true
+            return
+        }
+
+        statusText.text = """
+            Screen capture permission granted.
+
+            Starting recorder...
+        """.trimIndent()
+
+        /*
+         * IMPORTANT:
+         * RecordingService expects these exact
+         * action and extra names.
+         */
+        val serviceIntent =
+            Intent(
+                this,
+                RecordingService::class.java
+            ).apply {
+
+                action =
+                    RecordingService.ACTION_START
+
+                putExtra(
+                    RecordingService.EXTRA_RESULT_CODE,
+                    resultCode
+                )
+
+                putExtra(
+                    RecordingService.EXTRA_RESULT_DATA,
+                    data
+                )
+            }
+
+        try {
+
+            startForegroundService(
+                serviceIntent
+            )
+
+            recordButton.text = "RECORDING..."
+            recordButton.isEnabled = false
+
+            statusText.text = """
+                Recording started.
+
+                Check the notification bar.
+                ZoomFlow should show:
+
+                "Screen recording is active"
+            """.trimIndent()
+
+        } catch (e: Exception) {
+
+            statusText.text = """
+                Could not start recorder.
+
+                Error:
+                ${e.javaClass.simpleName}
+
+                ${e.message}
+            """.trimIndent()
+
+            recordButton.text = "START RECORDING"
+            recordButton.isEnabled = true
         }
     }
 }
